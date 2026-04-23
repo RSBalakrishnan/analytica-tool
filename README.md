@@ -4,19 +4,47 @@ Developer-first analytics infrastructure for tracking interactions across emails
 
 ## Setup
 
-1. **Database:**
-   - Create a PostgreSQL database named `analytica`.
-   - Run the schema in `src/db/schema.sql`.
+### 1. Prerequisites
+- **Node.js**: v18 or higher.
+- **PostgreSQL**: v14 or higher (if running in Persistent Mode).
 
-2. **Environment:**
-   - Copy `.env.example` to `.env`.
-   - Update `DATABASE_URL`.
+### 2. Database Configuration
+The project supports two modes for storing events: **Persistent Mode** (PostgreSQL) and **Smart Mock Mode** (In-memory).
 
-3. **Install & Run:**
+#### A. Persistent Mode (PostgreSQL)
+1. **Create Database**:
    ```bash
-   npm install
-   npm run dev
+   psql -U postgres -c "CREATE DATABASE analytica;"
    ```
+2. **Initialize Schema**:
+   Run the schema script to create tables, indexes, and custom enum types:
+   ```bash
+   psql -U postgres -d analytica -f src/db/schema.sql
+   ```
+3. **Configure Environment**:
+   Update your `.env` file with the connection string:
+   ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/analytica
+   ```
+
+#### B. Smart Mock Mode (Development)
+If you don't have PostgreSQL installed or want to run quick tests, simply **exclude** the `DATABASE_URL` from your `.env` file or set `MOCK_DB=true`.
+- Data will be stored in an in-memory store.
+- Analytics queries will still work through the simulated DB interface.
+- **Note**: Data will be lost when the server restarts.
+
+### 3. Application Installation
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Troubleshooting
+- **Connection Refused**: Ensure PostgreSQL is running (`pg_isready`).
+- **Authentication Failed**: Verify the user/password in `DATABASE_URL`.
+- **Enum Errors**: If the schema fails, ensure you have permissions to run `DO $$` blocks and `CREATE EXTENSION`.
 
 ## APIs
 

@@ -66,6 +66,24 @@ if (isMock) {
         };
       }
 
+      // Handle PAGE DETAILS (Granular lists)
+      if (sql.includes('SELECT TRACKING_ID') && sql.includes('LIKE $1')) {
+        const urlMatch = params[0].replace(/%/g, '');
+        const rows = mockStore
+          .filter(e => JSON.stringify(e.metadata).includes(urlMatch))
+          .sort((a, b) => {
+            const urlA = a.metadata?.url || '';
+            const urlB = b.metadata?.url || '';
+            if (urlA < urlB) return -1;
+            if (urlA > urlB) return 1;
+            if (a.tracking_id < b.tracking_id) return -1;
+            if (a.tracking_id > b.tracking_id) return 1;
+            return a.timestamp - b.timestamp;
+          });
+        
+        return { rows, rowCount: rows.length };
+      }
+
       // Handle Transactions
       if (['BEGIN', 'COMMIT', 'ROLLBACK'].includes(sql)) {
         return { rows: [], rowCount: 0 };

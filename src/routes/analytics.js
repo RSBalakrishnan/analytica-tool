@@ -98,6 +98,23 @@ router.get('/link/:trackingId', async (req, res) => {
  *         description: Email open status and count
  */
 /**
+ * @openapi
+ * /analytics/page/details:
+ *   get:
+ *     summary: Get Detailed Page Analytics (Separated by trackingId)
+ *     tags: [Analytics]
+ *     parameters:
+ *       - in: query
+ *         name: url
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The page URL to analyze
+ *     responses:
+ *       200:
+ *         description: Granular list of visitors and their events for this page
+ */
+/**
  * GET /analytics/page
  * Returns aggregate stats for a specific page URL.
  */
@@ -110,6 +127,24 @@ router.get('/page', async (req, res) => {
   try {
     const stats = await queryService.getPageAnalytics(url);
     res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: 'Query failed', message: err.message });
+  }
+});
+
+/**
+ * GET /analytics/page/details
+ * Returns granular events separated by trackingId for a specific URL.
+ */
+router.get('/page/details', async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  try {
+    const data = await queryService.getPageDetails(url);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Query failed', message: err.message });
   }

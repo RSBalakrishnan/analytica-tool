@@ -154,6 +154,61 @@ const queryService = {
       firstOpened: opens[0].timestamp,
       lastOpened: opens[opens.length - 1].timestamp
     };
+  },
+
+  /**
+   * Get detailed analytics for a page (or domain), separated by URL then trackingId
+   */
+  async getPageDetails(url) {
+    // Query all events related to this URL/Domain
+    const query = `
+      SELECT tracking_id, event_type, source, timestamp, metadata
+      FROM events
+      WHERE metadata->>'url' LIKE $1
+      ORDER BY metadata->>'url', tracking_id, timestamp ASC
+    `;
+    
+    const result = await db.query(query, [`%${url}%`]);
+    const allEvents = result.rows;
+
+    // Hierarchy: URL -> TrackingId -> Events
+    const hierarchy = {};
+    
+    allEvents.forEach(e => {
+      const pageUrl = e.metadata?.url || 'unknown';
+      const tid = e.tracking_id;
+
+      if (!hierarchy[pageUrl]) {
+        hierarchy[pageUrl] = {
+          url: pageUrl,
+          visitors: {}
+        };
+      }
+
+      if (!hierarchy[pageUrl].visitors[tid]) {
+        hierarchy[pageUrl].visitors[tid] = {
+          trackingId: tid,
+          events: []
+        };
+      }
+
+      hierarchy[pageUrl].visitors[tid].events.push({
+        eventType: e.event_type,
+        source: e.source,
+        timestamp: e.timestamp,
+        metadata: e.metadata
+      });
+    });
+
+    // Flatten into array format for API
+    return Object.values(hierarchy).map(page => ({
+      ...page,
+      totalUniqueVisitors: Object.keys(page.visitors).length,
+      visitors: Object.values(page.visitors).map(v => ({
+        ...v,
+        eventCount: v.events.length
+      }))
+    }));
   }
 };
 

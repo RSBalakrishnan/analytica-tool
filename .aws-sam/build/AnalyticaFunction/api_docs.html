@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANALYTICA | API Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0b10;
+            --bg-card: #141620;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --accent: #22d3ee;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --code-bg: #1e293b;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- Sidebar & Navigation --- */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 280px;
+            background: rgba(20, 22, 32, 0.8);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 3rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section h4 {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .nav-link {
+            display: block;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-light);
+        }
+
+        /* --- Main Content --- */
+        main {
+            margin-left: 280px;
+            padding: 4rem;
+            max-width: 1200px;
+        }
+
+        .header-section {
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--primary-light);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .endpoint-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .endpoint-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-right: 1rem;
+        }
+
+        .method-post {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .method-get {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-light);
+        }
+
+        .endpoint-url {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+        }
+
+        .case-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            margin-bottom: 2rem;
+        }
+
+        code {
+            color: var(--primary-light);
+        }
+
+        .use-case {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            nav {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            main {
+                margin-left: 0;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">ANALYTICA</div>
+        <div class="nav-section">
+            <h4>Getting Started</h4>
+            <a href="#sdk-integration" class="nav-link">SDK Integration</a>
+        </div>
+        <div class="nav-section">
+            <h4>Identity</h4>
+            <a href="#post-id" class="nav-link">POST /track/id</a>
+        </div>
+        <div class="nav-section">
+            <h4>Tracking</h4>
+            <a href="#get-pixel" class="nav-link">GET /pixel</a>
+            <a href="#get-redirect" class="nav-link">GET /r (Redirect)</a>
+            <a href="#post-events" class="nav-link">POST /events</a>
+        </div>
+        <div class="nav-section">
+            <h4>Analytics</h4>
+            <a href="#get-journey" class="nav-link">GET Journey Status</a>
+            <a href="#get-email" class="nav-link">GET Email Status</a>
+            <a href="#get-link" class="nav-link">GET Link Analytics</a>
+            <a href="#get-page" class="nav-link">GET Page Analytics</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="header-section">
+            <span class="badge">PROD VERSION 1.2</span>
+            <h1>API Documentation</h1>
+            <p style="color: var(--text-muted); font-size: 1.2rem;">Detailed reference for modern, event-driven tracking
+                and journey mapping.</p>
+            <p style="margin-top: 1rem; font-family: 'JetBrains Mono'; color: var(--accent);">Production Base URL:
+                http://3.110.134.234:3000</p>
+        </div>
+
+        <!-- 🧩 SDK SECTION -->
+        <h2 style="margin-bottom: 2rem; border-bottom: 1px solid var(--bg-card); padding-bottom: 1rem;">1. Website SDK
+            Integration</h2>
+        <div id="sdk-integration" class="endpoint-card" style="border-color: rgba(34, 211, 238, 0.3);">
+            <div class="method-badge" style="background: rgba(34, 211, 238, 0.1); color: var(--accent);">INTEGRATION
+            </div>
+            <h3>Embed the Tracking Script</h3>
+            <p class="case-label">Paste this script tag into the <code>&lt;head&gt;</code> of every page you want to
+                track.</p>
+
+            <div class="use-case">
+                <strong>How it works:</strong> The script automatically detects the <code>tid</code> from incoming
+                links, manages the user session, and sends engagement pulses to your analytics server.
+            </div>
+
+            <pre><code>&lt;script 
+  src="http://3.110.134.234:3000/sdk/analytica.js" 
+  data-endpoint="http://3.110.134.234:3000"
+&gt;&lt;/script&gt;</code></pre>
+
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Note: Ensure the <code>data-endpoint</code> matches
+                your production server URL.</p>
+        </div>
+
+        <!-- 🆔 IDENTITY SECTION -->
+        <h2 style="margin-bottom: 2rem; border-bottom: 1px solid var(--bg-card); padding-bottom: 1rem;">2. Identity
+            Management</h2>
+
+        <div id="post-id" class="endpoint-card">
+            <div class="method-badge method-post">POST</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/track/id</div>
+            <p class="case-label">Generate a unique Tracking ID with fully qualified URLs.</p>
+
+            <div class="use-case">
+                <strong>Use Case:</strong> Call this when preparing an email campaign. Use the returned
+                <code>pixelUrl</code> and <code>redirectUrlBase</code> to prepare your trackable messages.
+            </div>
+
+            <h3>Request Payload</h3>
+            <pre><code>{
+  "targets": [
+    "https://mysite.com/pricing",
+    "https://mysite.com/docs"
+  ]
+}</code></pre>
+
+            <h3>Response Structure</h3>
+            <pre><code>{
+  "trackingId": "Vx74ALvyQxr3NUhDyJBR4",
+  "pixelUrl": "http://3.110.134.234:3000/pixel/Vx74ALvyQxr3NUhDyJBR4",
+  "redirectUrlBase": "http://3.110.134.234:3000/r/Vx74ALvyQxr3NUhDyJBR4?url=",
+  "links": [
+    {
+      "original": "https://mysite.com/pricing",
+      "tracking": "http://3.110.134.234:3000/r/Vx74...urling"
+    }
+  ]
+}</code></pre>
+        </div>
+
+        <!-- 📡 TRACKING SECTION -->
+        <h2 style="margin-bottom: 2rem; border-bottom: 1px solid var(--bg-card); padding-bottom: 1rem;">3.
+            High-Precision Tracking</h2>
+
+        <div id="get-pixel" class="endpoint-card">
+            <div class="method-badge method-get">GET</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/pixel/:trackingId</div>
+            <p class="case-label">The invisible 1×1 GIF open tracker.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Embed this in the HTML <code>&lt;img&gt;</code> tag of an email. When the
+                user opens the email, the transparent pixel is requested, logging the open instantly.
+            </div>
+            <h3>Response</h3>
+            <p>Returns binary image data (<code>image/gif</code>). No JSON body.</p>
+        </div>
+
+        <div id="get-redirect" class="endpoint-card">
+            <div class="method-badge method-get">GET</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/r/:trackingId?url=TARGET_URL</div>
+            <p class="case-label">Link click interceptor and tracking propagator.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Use this URL for all links in your emails. When clicked, it logs the
+                <code>LINK_CLICK</code> event and redirects the user to their destination while injecting the
+                <code>tid</code> for browser tracking.
+            </div>
+        </div>
+
+        <div id="post-events" class="endpoint-card">
+            <div class="method-badge method-post">POST</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/events</div>
+            <p class="case-label">Batch ingestion for browser-side behavioral tracking.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Integrated into the JavaScript SDK. It sends <code>PAGE_VIEW</code>,
+                <code>PULSE</code>, and <code>EXIT</code> events automatically as the user interacts with your site.
+            </div>
+
+            <h3>Request Payload</h3>
+            <pre><code>{
+  "trackingId": "Vx74ALvyQxr3NUhDyJBR4",
+  "sessionId": "sess_r9ktdew11",
+  "events": [
+    { 
+      "eventType": "PAGE_VIEW", 
+      "timestamp": 1776422480506, 
+      "metadata": { "url": "/docs" } 
+    }
+  ]
+}</code></pre>
+        </div>
+
+        <!-- 📊 ANALYTICS SECTION -->
+        <h2 style="margin-bottom: 2rem; border-bottom: 1px solid var(--bg-card); padding-bottom: 1rem;">4. Smart
+            Analytics & Journeys</h2>
+
+        <div id="get-journey" class="endpoint-card">
+            <div class="method-badge method-get">GET</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/analytics/tracking/:trackingId</div>
+            <p class="case-label">Get the complete sequence of user engagement.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Use this to display a "Customer Path" or "Journey Map" in your dashboard. It
+                automatically segments the raw data into a readable chronological timeline.
+            </div>
+
+            <h3>Response Example</h3>
+            <pre><code>{
+  "summary": {
+    "totalTimeSpentSeconds": 142,
+    "timeline": [
+      { "url": "/home", "enteredAt": 123456, "duration": 30 },
+      { "url": "/pricing", "enteredAt": 123486, "duration": 12 }
+    ]
+  }
+}</code></pre>
+        </div>
+
+        <div id="get-email" class="endpoint-card">
+            <div class="method-badge method-get">GET</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/analytics/email/:trackingId</div>
+            <p class="case-label">Specific check for email interaction status.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Perfect for a "Sales List" view where you just need to know if the email was
+                opened and how many times.
+            </div>
+
+            <h3>Response Structure</h3>
+            <pre><code>{
+  "trackingId": "...",
+  "isOpened": true,
+  "openCount": 3,
+  "lastOpened": 1776422215007
+}</code></pre>
+        </div>
+
+        <div id="get-page" class="endpoint-card">
+            <div class="method-badge method-get">GET</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/analytics/page?url=ANY_PAGE_URL</div>
+            <p class="case-label">Aggregate global stats for a specific URL.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Identify which pages are the most popular and have the highest "attention
+                retention" across all users.
+            </div>
+        </div>
+
+        <div id="get-page-details" class="endpoint-card">
+            <div class="method-badge method-get">GET</div>
+            <div class="endpoint-url">http://3.110.134.234:3000/analytics/page/details?url=ANY_PAGE_URL</div>
+            <p class="case-label">Granular visitor-level data for a specific URL.</p>
+            <div class="use-case">
+                <strong>Use Case:</strong> Deep-dive into a specific page to see exactly which Tracking IDs visited it and what actions they took on that page.
+            </div>
+
+            <h3>Response Example</h3>
+            <pre><code>{
+  "url": "/pricing",
+  "totalUniqueVisitors": 2,
+  "visitors": [
+    {
+      "trackingId": "Vx74AL...",
+      "events": [
+        { "eventType": "PAGE_VIEW", "timestamp": 123456 },
+        { "eventType": "LINK_CLICK", "timestamp": 123478 }
+      ]
+    }
+  ]
+}</code></pre>
+        </div>
+
+
+    </main>
+
+    <footer
+        style="margin-left: 280px; padding: 2rem 4rem; text-align: center; border-top: 1px solid var(--bg-card); color: var(--text-muted); font-size: 0.8rem;">
+        &copy; 2026 ANALYTICA Infrastructure | System A Node
+    </footer>
+</body>
+
+</html>

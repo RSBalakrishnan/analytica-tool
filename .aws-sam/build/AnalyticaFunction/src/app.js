@@ -9,10 +9,6 @@ const swaggerUi = require('swagger-ui-express');
 
 const app = express();
 
-if (process.env.TRUST_PROXY === 'true') {
-  app.set('trust proxy', 1); // Trust first-level proxy (API Gateway)
-}
-
 // Swagger Definition
 const swaggerOptions = {
   definition: {

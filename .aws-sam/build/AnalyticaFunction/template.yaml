@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Analytica Infrastructure API - EC2 to Lambda Migration
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        DATABASE_URL: !Ref DatabaseUrl
+        BASE_URL: !Ref BaseUrl
+        NODE_ENV: production
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    Description: PostgreSQL Connection String
+  BaseUrl:
+    Type: String
+    Description: Base URL for the API (e.g. https://api.yourdomain.com)
+
+Resources:
+  AnalyticaApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  AnalyticaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/lambda.handler
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AnalyticaApi
+            Path: /{proxy+}
+            Method: ANY
+        RootEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AnalyticaApi
+            Path: /
+            Method: ANY
+      # Uncomment and configure if your DB is in a VPC
+      # VpcConfig:
+      #   SecurityGroupIds:
+      #     - sg-xxxxxxxx
+      #   SubnetIds:
+      #     - subnet-xxxxxxxx
+      #     - subnet-xxxxxxxx
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${AnalyticaApi}.execute-api.${AWS::Region}.amazonaws.com"

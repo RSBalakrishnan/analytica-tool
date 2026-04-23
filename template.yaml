@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Analytica Infrastructure API - Production Grade SAM Template
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    Description: Environment stage (dev/prod)
+  DatabaseName:
+    Type: String
+    Default: analytica
+  DatabaseUser:
+    Type: String
+    Default: analytica_admin
+  BaseUrl:
+    Type: String
+    Description: Base URL for the API (e.g. https://api.yourdomain.com)
+  CorsAllowOrigins:
+    Type: String
+    Default: "*"
+    Description: Comma-separated list of allowed CORS origins
+  TrustProxy:
+    Type: String
+    Default: "true"
+    Description: Whether to trust the reverse proxy (API Gateway)
+
+Resources:
+  # 1. Secret for Database Credentials
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub analytica-db-credentials-${Stage}
+      Description: Database credentials for the Analytica API
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${DatabaseUser}"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+
+  # 2. Managed PostgreSQL (RDS)
+  AnalyticaDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub analytica-db-${Stage}
+      AllocatedStorage: '20'
+      DBInstanceClass: db.t4g.micro
+      Engine: postgres
+      EngineVersion: '15'
+      MasterUsername: !GetAtt DatabaseSecret.SecretStringJSON.username
+      MasterUserPassword: !GetAtt DatabaseSecret.SecretStringJSON.password
+      DBName: !Ref DatabaseName
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+      DeleteAutomatedBackups: true
+      BackupRetentionPeriod: 7
+
+  # 3. Security Groups
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Lambda to reach RDS
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Analytica Lambda
+
+  # 4. API Gateway (HttpApi)
+  AnalyticaApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+
+  # 5. Lambda Function
+  AnalyticaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/lambda.handler
+      Runtime: nodejs20.x
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          DB_SECRET_ARN: !Ref DatabaseSecret
+          DB_HOST: !GetAtt AnalyticaDB.Endpoint.Address
+          DB_NAME: !Ref DatabaseName
+          BASE_URL: !Ref BaseUrl
+          CORS_ALLOW_ORIGINS: !Ref CorsAllowOrigins
+          TRUST_PROXY: !Ref TrustProxy
+          NODE_ENV: production
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DatabaseSecret
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AnalyticaApi
+            Path: /{proxy+}
+            Method: ANY
+        RootEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AnalyticaApi
+            Path: /
+            Method: ANY
+      # Note: VpcConfig requires SubnetIds. 
+      # In a real environment, you should provide existing SubnetIds or create them in this template.
+      # VpcConfig:
+      #   SecurityGroupIds:
+      #     - !Ref LambdaSecurityGroup
+      #   SubnetIds:
+      #     - subnet-xxxxxx
+      #     - subnet-xxxxxx
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${AnalyticaApi}.execute-api.${AWS::Region}.amazonaws.com"
+  DBSecretArn:
+    Description: "ARN of the Secret containing DB credentials"
+    Value: !Ref DatabaseSecret

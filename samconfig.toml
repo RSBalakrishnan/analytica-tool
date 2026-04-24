@@ -5,7 +5,7 @@ stack_name = "gtm-analytics-prod"
 resolve_s3 = true
 s3_prefix = "gtm-analytics-prod"
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Stage=\"prod\" DatabaseName=\"analytica\" DatabaseUser=\"analytica_admin\" DatabasePassword=\"7c24af47f2ea5501d77ce18676ed047d\" VpcId=\"vpc-0c704ffca87c9b91d\" BaseUrl=\"\" CorsAllowOrigins=\"*\" TrustProxy=\"true\" ApiKey=\"809d29d5f2b113db5bdaab1dfa0c2ab3\""
+parameter_overrides = "Stage=\"prod\" DatabaseName=\"analytica\" DatabaseUser=\"analytica_admin\" DatabasePassword=\"7c24af47f2ea5501d77ce18676ed047d\" VpcId=\"vpc-0c704ffca87c9b91d\" BaseUrl=\"https://0z52rton49.execute-api.ap-south-1.amazonaws.com\" CorsAllowOrigins=\"*\" TrustProxy=\"true\" ApiKey=\"809d29d5f2b113db5bdaab1dfa0c2ab3\""
 image_repositories = []
 confirm_changeset = false
 disable_rollback = true

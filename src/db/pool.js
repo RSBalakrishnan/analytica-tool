@@ -69,6 +69,7 @@ async function initialize() {
     max: process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS) : (process.env.LAMBDA_TASK_ROOT ? 2 : 20),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
+    ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') ? { rejectUnauthorized: false } : false
   });
 
   pool.on('error', (err) => console.error('Unexpected error on idle client', err));
@@ -80,6 +81,10 @@ module.exports = {
   query: async (text, params) => {
     if (!pool) await initialize();
     return pool.query(text, params);
+  },
+  connect: async () => {
+    if (!pool) await initialize();
+    return pool.connect();
   },
   get pool() { return pool; },
   isMock

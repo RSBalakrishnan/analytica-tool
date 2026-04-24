@@ -4,10 +4,15 @@ const path = require('path');
 require('dotenv').config();
 
 const enrichRequest = require('./middleware/enrichment');
+const authenticate = require('./middleware/auth');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
 const app = express();
+
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1); // Trust first-level proxy (API Gateway)
+}
 
 // Swagger Definition
 const swaggerOptions = {
@@ -21,6 +26,20 @@ const swaggerOptions = {
     servers: [
       {
         url: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
+      },
+    ],
+    components: {
+      securitySchemes: {
+        ApiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key',
+        },
+      },
+    },
+    security: [
+      {
+        ApiKeyAuth: [],
       },
     ],
   },
@@ -56,8 +75,8 @@ const analyticsRoutes = require('./routes/analytics');
 
 app.use('/track', trackingRoutes);
 app.use('/', trackingRoutes); // For /pixel and /r shortcuts
-app.use('/events', eventRoutes);
-app.use('/analytics', analyticsRoutes);
+app.use('/events', authenticate, eventRoutes);
+app.use('/analytics', authenticate, analyticsRoutes);
 
 // Error Handling
 app.use((err, req, res, next) => {

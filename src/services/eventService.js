@@ -39,7 +39,7 @@ const eventService = {
    */
   async logEvents(trackingId, sessionId, userId, events) {
     // Using a transaction for batch ingestion
-    const client = await db.pool.connect();
+    const client = await db.connect();
     try {
       await client.query('BEGIN');
       

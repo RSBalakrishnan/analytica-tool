@@ -1,44 +1,129 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Analytica Infrastructure API - EC2 to Lambda Migration
-Globals:
-  Function:
-    Timeout: 30
-    MemorySize: 512
-    Runtime: nodejs20.x
-    Environment:
-      Variables:
-        DATABASE_URL:
-          Ref: DatabaseUrl
-        BASE_URL:
-          Ref: BaseUrl
-        NODE_ENV: production
+Description: Analytica Infrastructure API - Production Grade SAM Template
 Parameters:
-  DatabaseUrl:
+  Stage:
     Type: String
-    Description: PostgreSQL Connection String
+    Default: prod
+    Description: Environment stage (dev/prod)
+  DatabaseName:
+    Type: String
+    Default: analytica
+  DatabaseUser:
+    Type: String
+    Default: analytica_admin
+  DatabasePassword:
+    Type: String
+    NoEcho: true
+    Description: Password for the PostgreSQL database
   BaseUrl:
     Type: String
     Description: Base URL for the API (e.g. https://api.yourdomain.com)
+  VpcId:
+    Type: String
+    Description: VPC ID where RDS and Lambda will be deployed (e.g. vpc-xxxxxx)
+  CorsAllowOrigins:
+    Type: String
+    Default: '*'
+    Description: Comma-separated list of allowed CORS origins
+  TrustProxy:
+    Type: String
+    Default: 'true'
+    Description: Whether to trust the reverse proxy (API Gateway)
+  ApiKey:
+    Type: String
+    NoEcho: true
+    Description: API Key for protected routes
 Resources:
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: analytica-db-credentials-${Stage}
+      Description: Database credentials for the Analytica API
+      SecretString:
+        Fn::Sub: '{"username":"${DatabaseUser}", "password":"${DatabasePassword}"}'
+  AnalyticaDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for Analytica RDS
+      SubnetIds:
+      - subnet-0eee98b1bc547811f
+      - subnet-00697a8c1e46d343e
+      - subnet-0545d0dd321d17e91
+  AnalyticaDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier:
+        Fn::Sub: analytica-db-${Stage}
+      AllocatedStorage: '20'
+      DBInstanceClass: db.t4g.micro
+      Engine: postgres
+      EngineVersion: '15'
+      MasterUsername:
+        Ref: DatabaseUser
+      MasterUserPassword:
+        Ref: DatabasePassword
+      DBName:
+        Ref: DatabaseName
+      PubliclyAccessible: false
+      DBSubnetGroupName:
+        Ref: AnalyticaDBSubnetGroup
+      VPCSecurityGroups:
+      - Fn::GetAtt:
+        - DBSecurityGroup
+        - GroupId
+      DeleteAutomatedBackups: true
+      BackupRetentionPeriod: 7
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Lambda and temporary public access to RDS
+      VpcId:
+        Ref: VpcId
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        SourceSecurityGroupId:
+          Fn::GetAtt:
+          - LambdaSecurityGroup
+          - GroupId
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Analytica Lambda
+      VpcId:
+        Ref: VpcId
   AnalyticaApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      CorsConfiguration:
-        AllowOrigins:
-        - '*'
-        AllowMethods:
-        - GET
-        - POST
-        - OPTIONS
-        AllowHeaders:
-        - Content-Type
-        - Authorization
+      StageName: $default
   AnalyticaFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: AnalyticaFunction
       Handler: src/lambda.handler
+      Runtime: nodejs20.x
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          DATABASE_URL:
+            Fn::Sub: postgresql://${DatabaseUser}:${DatabasePassword}@${AnalyticaDB.Endpoint.Address}:${AnalyticaDB.Endpoint.Port}/${DatabaseName}
+          BASE_URL:
+            Ref: BaseUrl
+          CORS_ALLOW_ORIGINS:
+            Ref: CorsAllowOrigins
+          TRUST_PROXY:
+            Ref: TrustProxy
+          NODE_ENV: production
+          API_KEY:
+            Ref: ApiKey
+      Policies:
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn:
+            Ref: DatabaseSecret
       Events:
         ApiEvent:
           Type: HttpApi
@@ -54,6 +139,13 @@ Resources:
               Ref: AnalyticaApi
             Path: /
             Method: ANY
+      VpcConfig:
+        SecurityGroupIds:
+        - Ref: LambdaSecurityGroup
+        SubnetIds:
+        - subnet-0eee98b1bc547811f
+        - subnet-00697a8c1e46d343e
+        - subnet-0545d0dd321d17e91
     Metadata:
       SamResourceId: AnalyticaFunction
 Outputs:
@@ -61,3 +153,7 @@ Outputs:
     Description: API Gateway endpoint URL
     Value:
       Fn::Sub: https://${AnalyticaApi}.execute-api.${AWS::Region}.amazonaws.com
+  DBSecretArn:
+    Description: ARN of the Secret containing DB credentials
+    Value:
+      Ref: DatabaseSecret

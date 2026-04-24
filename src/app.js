@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({
+  path: process.env.LAMBDA_TASK_ROOT ? path.resolve(process.env.LAMBDA_TASK_ROOT, '.env.prod') : path.resolve(__dirname, '../.env.prod')
+});
 
 const enrichRequest = require('./middleware/enrichment');
+const authenticate = require('./middleware/auth');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
@@ -25,6 +28,20 @@ const swaggerOptions = {
     servers: [
       {
         url: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
+      },
+    ],
+    components: {
+      securitySchemes: {
+        ApiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key',
+        },
+      },
+    },
+    security: [
+      {
+        ApiKeyAuth: [],
       },
     ],
   },
@@ -60,8 +77,8 @@ const analyticsRoutes = require('./routes/analytics');
 
 app.use('/track', trackingRoutes);
 app.use('/', trackingRoutes); // For /pixel and /r shortcuts
-app.use('/events', eventRoutes);
-app.use('/analytics', analyticsRoutes);
+app.use('/events', authenticate, eventRoutes);
+app.use('/analytics', authenticate, analyticsRoutes);
 
 // Error Handling
 app.use((err, req, res, next) => {

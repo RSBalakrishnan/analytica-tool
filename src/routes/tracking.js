@@ -20,6 +20,40 @@ const urlSchema = Joi.object({
 
 /**
  * @openapi
+ * /track/exists/{trackingId}:
+ *   get:
+ *     summary: Check if a Tracking ID exists
+ *     tags: [Identity]
+ *     parameters:
+ *       - in: path
+ *         name: trackingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ */
+router.get('/exists/:trackingId', validate({ params: trackingIdSchema }), async (req, res) => {
+  const { trackingId } = req.params;
+  try {
+    const exists = await eventService.isTrackingIdRegistered(trackingId);
+    res.json({ exists });
+  } catch (err) {
+    console.error('Check existence failed:', err);
+    res.status(500).json({ error: 'Check failed', message: err.message });
+  }
+});
+
+/**
+ * @openapi
  * /track/id:
  *   post:
  *     summary: Generate a new Tracking ID

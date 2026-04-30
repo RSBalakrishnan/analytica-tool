@@ -23,9 +23,12 @@ async function getConnectionString() {
 }
 
 const mockStore = [];
+const mockRegistry = [];
 const mockPool = {
   query: async (text, params) => {
     const sql = text.replace(/\s+/g, ' ').trim().toUpperCase();
+    
+    // 1. Ingestion (Events)
     if (sql.startsWith('INSERT INTO EVENTS')) {
       const event = {
         event_id: Math.floor(Math.random() * 1000000),
@@ -40,14 +43,30 @@ const mockPool = {
       mockStore.push(event);
       return { rows: [event], rowCount: 1 };
     }
-    // ... (Keep other mock logic but abstracted)
+
+    // 2. Registry Registration
+    if (sql.startsWith('INSERT INTO TRACKING_REGISTRY')) {
+      if (!mockRegistry.includes(params[0])) {
+        mockRegistry.push(params[0]);
+      }
+      return { rows: [], rowCount: 1 };
+    }
+
+    // 3. Registry Check
+    if (sql.includes('FROM TRACKING_REGISTRY WHERE TRACKING_ID = $1')) {
+      const trackingId = params[0];
+      const exists = mockRegistry.includes(trackingId);
+      return { rows: exists ? [{1: 1}] : [], rowCount: exists ? 1 : 0 };
+    }
+
+    // 4. Analytics Queries
     if (sql.includes('FROM EVENTS WHERE TRACKING_ID = $1')) {
       const trackingId = params[0];
       let rows = mockStore.filter(e => e.tracking_id === trackingId).sort((a, b) => a.timestamp - b.timestamp);
       if (sql.includes("EVENT_TYPE = 'EMAIL_OPEN'")) rows = rows.filter(e => e.event_type === 'EMAIL_OPEN');
       return { rows, rowCount: rows.length };
     }
-    // Simplified for brevity in this replacement chunk, but keeping the core
+
     return { rows: [], rowCount: 0 };
   },
   connect: async () => ({ query: async (t, p) => mockPool.query(t, p), release: () => {} }),

@@ -70,6 +70,26 @@ const eventService = {
     } finally {
       client.release();
     }
+  },
+  /**
+   * Register a new tracking ID
+   */
+  async registerTrackingId(trackingId) {
+    const query = `
+      INSERT INTO tracking_registry (tracking_id, created_at)
+      VALUES ($1, $2)
+      ON CONFLICT (tracking_id) DO NOTHING
+    `;
+    await db.query(query, [trackingId, Date.now()]);
+  },
+
+  /**
+   * Check if a tracking ID is registered
+   */
+  async isTrackingIdRegistered(trackingId) {
+    const query = `SELECT 1 FROM tracking_registry WHERE tracking_id = $1`;
+    const result = await db.query(query, [trackingId]);
+    return result.rowCount > 0;
   }
 };
 

@@ -1,4 +1,4 @@
-(function() {
+(function () {
   const SCRIPT_NAME = 'analytica.js';
   const PULSE_INTERVAL = 30000; // 30 seconds for routine active heartbeats
   const IDLE_THRESHOLD = 30000; // 30 seconds of no interaction = idle
@@ -18,7 +18,7 @@
 
   const storage = {
     get: (key) => localStorage.getItem(key),
-    set: (key, value) => { try { localStorage.setItem(key, value); } catch (e) {} }
+    set: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { } }
   };
 
   function getSessionId() {
@@ -73,7 +73,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: payload,
         keepalive: true
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 
@@ -87,7 +87,7 @@
       accumulatedTime += (now - startTime);
     }
     startTime = now;
-    
+
     const durationSec = Math.round(accumulatedTime / 1000);
     accumulatedTime = accumulatedTime % 1000; // Keep the remainder
     return durationSec;
@@ -121,13 +121,13 @@
   };
 
   const originalPushState = history.pushState;
-  history.pushState = function() {
+  history.pushState = function () {
     originalPushState.apply(this, arguments);
     handleNav();
   };
 
   const originalReplaceState = history.replaceState;
-  history.replaceState = function() {
+  history.replaceState = function () {
     originalReplaceState.apply(this, arguments);
     handleNav();
   };
@@ -141,8 +141,8 @@
     sendEvent('PAGE_VIEW');
   });
 
-  window.analytica = { 
-    track: (type, meta) => sendEvent(type, meta) 
+  window.analytica = {
+    track: (type, meta) => sendEvent(type, meta)
   };
 
 })();

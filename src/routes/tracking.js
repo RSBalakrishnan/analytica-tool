@@ -1,8 +1,22 @@
 const express = require('express');
 const { nanoid } = require('nanoid');
+const Joi = require('joi');
 const eventService = require('../services/eventService');
+const validate = require('../middleware/validation');
+const checkExistence = require('../middleware/existence');
 
 const router = express.Router();
+
+// Common Schemas
+const trackingIdSchema = Joi.object({
+  trackingId: Joi.string().regex(/^[A-Za-z0-9_-]{21}$/).required().messages({
+    'string.pattern.base': 'trackingId must be a valid 21-character alphanumeric string (including _ and -)'
+  })
+});
+
+const urlSchema = Joi.object({
+  url: Joi.string().uri().required()
+});
 
 /**
  * @openapi
@@ -101,10 +115,19 @@ const PIXEL_BIN = Buffer.from(
  * POST /track/id
  * Generates a new tracking ID for a requester along with ready-to-use URLs.
  * Supports an optional 'targets' array for bulk link generation.
+ * (Validation skipped as per requirements)
  */
-router.post('/id', (req, res) => {
+router.post('/id', async (req, res) => {
   const { targets } = req.body || {};
   const trackingId = nanoid(21);
+  
+  try {
+    await eventService.registerTrackingId(trackingId);
+  } catch (err) {
+    console.error('Failed to register tracking ID:', err);
+    // Continue anyway, but this is a serious issue if DB is down
+  }
+
   const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
   
   const response = { 
@@ -128,23 +151,19 @@ router.post('/id', (req, res) => {
  * GET /pixel/:trackingId
  * Invisible pixel for email open tracking.
  */
-router.get('/pixel/:trackingId', async (req, res) => {
+router.get('/pixel/:trackingId', validate({ params: trackingIdSchema }), checkExistence, async (req, res) => {
   const { trackingId } = req.params;
   const { ip, userAgent, timestamp } = req.analyticsMetadata;
 
-  try {
-    // Fire and forget (optional: await if you need strict consistency)
-    eventService.logEvent({
-      trackingId,
-      sessionId: 'system', // No browser session for email pixels
-      eventType: 'EMAIL_OPEN',
-      source: 'EMAIL',
-      timestamp,
-      metadata: { ip, userAgent }
-    });
-  } catch (err) {
-    console.error('Pixel log failed:', err);
-  }
+  // Fire and forget (optional: await if you need strict consistency)
+  eventService.logEvent({
+    trackingId,
+    sessionId: 'system', // No browser session for email pixels
+    eventType: 'EMAIL_OPEN',
+    source: 'EMAIL',
+    timestamp,
+    metadata: { ip, userAgent }
+  }).catch(err => console.error('Pixel log failed:', err));
 
   res.set({
     'Content-Type': 'image/gif',
@@ -160,14 +179,10 @@ router.get('/pixel/:trackingId', async (req, res) => {
  * GET /r/:trackingId
  * Link redirect tracking.
  */
-router.get('/r/:trackingId', async (req, res) => {
+router.get('/r/:trackingId', validate({ params: trackingIdSchema, query: urlSchema }), checkExistence, async (req, res) => {
   const { trackingId } = req.params;
   const { url } = req.query;
   const { ip, userAgent, timestamp } = req.analyticsMetadata;
-
-  if (!url) {
-    return res.status(400).json({ error: 'Missing redirect url parameter' });
-  }
 
   try {
     await eventService.logEvent({

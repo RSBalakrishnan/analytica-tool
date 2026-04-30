@@ -1,5 +1,6 @@
 const express = require('express');
 const eventService = require('../services/eventService');
+const checkExistence = require('../middleware/existence');
 
 const router = express.Router();
 
@@ -52,7 +53,7 @@ const router = express.Router();
  * Main ingestion endpoint for website tracking.
  * Accepts a batch of events with trackingId and sessionId.
  */
-router.post('/', async (req, res) => {
+router.post('/', checkExistence, async (req, res) => {
   const { trackingId, sessionId, userId, events } = req.body;
   const { ip, userAgent } = req.analyticsMetadata;
 

@@ -37,3 +37,15 @@ CREATE TABLE IF NOT EXISTS identity_map (
     user_id     VARCHAR(128) NOT NULL,
     mapped_at   BIGINT       NOT NULL
 );
+
+-- Tracking ID Registry (ensures IDs are system-generated)
+CREATE TABLE IF NOT EXISTS tracking_registry (
+    tracking_id VARCHAR(128) PRIMARY KEY,
+    created_at  BIGINT NOT NULL
+);
+
+-- Migration: Seed registry with existing IDs from events
+-- INSERT INTO tracking_registry (tracking_id, created_at)
+-- SELECT DISTINCT tracking_id, MIN(timestamp)
+-- FROM events
+-- ON CONFLICT (tracking_id) DO NOTHING;
